@@ -156,8 +156,8 @@ export default function App() {
       if (!wasCompleted && updatedTasks[originalIndex].done) {
         Alert.alert(
           '🎉 Task Completed!',
-          `Great job completing "${updatedTasks[originalIndex].text}"!`,
-          [{ text: 'Awesome!', style: 'default' }]
+          `Excellent work completing "${updatedTasks[originalIndex].text}"! Keep it up! 💪`,
+          [{ text: 'Thank you!', style: 'default' }]
         );
       }
       
