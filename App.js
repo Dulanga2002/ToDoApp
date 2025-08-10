@@ -145,11 +145,22 @@ export default function App() {
     
     if (originalIndex !== -1) {
       const updatedTasks = [...tasks];
+      const wasCompleted = updatedTasks[originalIndex].done;
       updatedTasks[originalIndex] = {
         ...updatedTasks[originalIndex],
         done: !updatedTasks[originalIndex].done,
         updatedAt: new Date().toISOString(),
       };
+      
+      // Show celebration for task completion
+      if (!wasCompleted && updatedTasks[originalIndex].done) {
+        Alert.alert(
+          '🎉 Task Completed!',
+          `Great job completing "${updatedTasks[originalIndex].text}"!`,
+          [{ text: 'Awesome!', style: 'default' }]
+        );
+      }
+      
       setTasks(updatedTasks);
       saveTasks(updatedTasks);
     }
@@ -223,7 +234,7 @@ export default function App() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>✅ Advanced ToDo</Text>
+        <Text style={styles.headerTitle}>✅  To Do List</Text>
         {tasks.length > 0 && (
           <TouchableOpacity onPress={clearAllTasks}>
             <Text style={styles.clearAllButton}>Clear All</Text>
