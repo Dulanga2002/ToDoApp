@@ -1,42 +1,50 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList } from 'react-native';
 
 export default function App() {
   const [task, setTask] = useState('');
-  const [tasks, setTasks] = useState([]);
+  const [taskItems, setTaskItems] = useState([]);
 
   const addTask = () => {
-    if (task.trim() === '') return;
-    setTasks([...tasks, { key: Date.now().toString(), text: task }]);
-    setTask('');
+    if (task.trim()) {
+      setTaskItems([...taskItems, task.trim()]);
+      setTask('');
+    }
   };
 
-  const removeTask = (key) => {
-    setTasks(tasks.filter(item => item.key !== key));
+  const deleteTask = (index) => {
+    let itemsCopy = [...taskItems];
+    itemsCopy.splice(index, 1);
+    setTaskItems(itemsCopy);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My To-Do List</Text>
+      <Text style={styles.title}>My ToDo List</Text>
 
-      <View style={styles.inputContainer}>
+      <View style={styles.inputWrapper}>
         <TextInput
           style={styles.input}
-          placeholder="Enter a task"
+          placeholder="Write a task"
           value={task}
-          onChangeText={setTask}
+          onChangeText={text => setTask(text)}
         />
-        <Button title="Add" onPress={addTask} />
+        <TouchableOpacity style={styles.addButton} onPress={addTask}>
+          <Text style={styles.addButtonText}>Add</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={tasks}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => removeTask(item.key)}>
-            <Text style={styles.task}>{item.text}</Text>
-          </TouchableOpacity>
+        data={taskItems}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, index }) => (
+          <View style={styles.taskItem}>
+            <Text style={styles.taskText}>{item}</Text>
+            <TouchableOpacity onPress={() => deleteTask(index)}>
+              <Text style={styles.deleteText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
         )}
-        ListEmptyComponent={<Text style={{textAlign: 'center'}}>No tasks yet</Text>}
       />
     </View>
   );
@@ -44,34 +52,53 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 50,
-    paddingHorizontal: 20,
     flex: 1,
-    backgroundColor: '#fff',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    backgroundColor: '#f9f9f9',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
   },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     marginBottom: 20,
   },
   input: {
     flex: 1,
-    borderColor: '#777',
+    borderColor: '#888',
     borderWidth: 1,
-    marginRight: 10,
-    paddingHorizontal: 8,
+    borderRadius: 6,
+    paddingHorizontal: 12,
     height: 40,
-    borderRadius: 5,
   },
-  task: {
-    fontSize: 18,
-    padding: 10,
-    borderBottomColor: '#ddd',
-    borderBottomWidth: 1,
+  addButton: {
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    paddingHorizontal: 15,
+    marginLeft: 10,
+    borderRadius: 6,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  taskItem: {
+    backgroundColor: 'white',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  taskText: {
+    fontSize: 16,
+  },
+  deleteText: {
+    color: 'red',
+    fontWeight: 'bold',
   },
 });
