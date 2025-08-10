@@ -1,122 +1,298 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  StyleSheet, Text, View, TextInput,
-  TouchableOpacity, FlatList, Animated,
+  StyleSheet,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Text,
+  Animated,
+  Alert,
+  StatusBar,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function App() {
-  const [task, setTask] = useState('');
-  const [taskItems, setTaskItems] = useState([]);
-  const fadeAnim = React.useRef(new Animated.Value(0)).current; // for fade animation
+// Components
+import TaskItem from './components/TaskItem';
+import AddTaskModal from './components/AddTaskModal';
+import TaskFilter from './components/TaskFilter';
+import TaskStats from './components/TaskStats';
 
+// Utils
+import { filterTasks, sortTasks, getUniqueCategories, generateTaskId } from './utils/taskUtils';
+
+export default function App() {
+  // State Management
+  const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
+  const [showCompleted, setShowCompleted] = useState(true);
+  const [sortBy, setSortBy] = useState('created');
+  
+  // Animation
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fabScale = useRef(new Animated.Value(1)).current;
+
+  // Effects
   useEffect(() => {
     loadTasks();
+    startFadeAnimation();
   }, []);
 
   useEffect(() => {
-    // Fade in animation when tasks change
+    applyFiltersAndSort();
+  }, [tasks, searchQuery, selectedCategory, selectedPriority, showCompleted, sortBy]);
+
+  // Animations
+  const startFadeAnimation = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 400,
+      duration: 500,
       useNativeDriver: true,
     }).start();
-  }, [taskItems]);
+  };
 
+  const animateFAB = () => {
+    Animated.sequence([
+      Animated.timing(fabScale, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fabScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  // Data Management
   const loadTasks = async () => {
     try {
-      const savedTasks = await AsyncStorage.getItem('@tasks');
-      if (savedTasks !== null) {
-        setTaskItems(JSON.parse(savedTasks));
+      setLoading(true);
+      const savedTasks = await AsyncStorage.getItem('@advanced_tasks');
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks);
+        setTasks(parsedTasks);
       }
-    } catch (e) {
-      console.log('Failed to load tasks.', e);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      Alert.alert('Error', 'Failed to load tasks');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveTasks = async (tasks) => {
+  const saveTasks = async (tasksToSave) => {
     try {
-      await AsyncStorage.setItem('@tasks', JSON.stringify(tasks));
-    } catch (e) {
-      console.log('Failed to save tasks.', e);
+      await AsyncStorage.setItem('@advanced_tasks', JSON.stringify(tasksToSave));
+    } catch (error) {
+      console.error('Error saving tasks:', error);
+      Alert.alert('Error', 'Failed to save tasks');
     }
   };
 
-  const addTask = () => {
-    if (task.trim()) {
-      const updatedTasks = [...taskItems, { text: task.trim(), done: false }];
-      setTaskItems(updatedTasks);
-      setTask('');
+  const applyFiltersAndSort = () => {
+    const filters = {
+      searchQuery,
+      selectedCategory,
+      selectedPriority,
+      showCompleted,
+    };
+    
+    let filtered = filterTasks(tasks, filters);
+    filtered = sortTasks(filtered, sortBy);
+    setFilteredTasks(filtered);
+  };
+
+  // Task Operations
+  const addTask = (newTask) => {
+    const taskWithId = {
+      ...newTask,
+      id: newTask.id || generateTaskId(),
+      createdAt: newTask.createdAt || new Date().toISOString(),
+    };
+    
+    const updatedTasks = [...tasks, taskWithId];
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+
+  const updateTask = (updatedTask) => {
+    const updatedTasks = tasks.map(task => 
+      task.id === updatedTask.id 
+        ? { ...updatedTask, updatedAt: new Date().toISOString() }
+        : task
+    );
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+
+  const toggleTask = (index) => {
+    const task = filteredTasks[index];
+    const originalIndex = tasks.findIndex(t => t.id === task.id);
+    
+    if (originalIndex !== -1) {
+      const updatedTasks = [...tasks];
+      updatedTasks[originalIndex] = {
+        ...updatedTasks[originalIndex],
+        done: !updatedTasks[originalIndex].done,
+        updatedAt: new Date().toISOString(),
+      };
+      setTasks(updatedTasks);
       saveTasks(updatedTasks);
     }
   };
 
-  const toggleTaskDone = (index) => {
-    let itemsCopy = [...taskItems];
-    itemsCopy[index].done = !itemsCopy[index].done;
-    setTaskItems(itemsCopy);
-    saveTasks(itemsCopy);
+  const deleteTask = (index) => {
+    const task = filteredTasks[index];
+    const updatedTasks = tasks.filter(t => t.id !== task.id);
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
 
-  const deleteTask = (index) => {
-    let itemsCopy = [...taskItems];
-    itemsCopy.splice(index, 1);
-    setTaskItems(itemsCopy);
-    saveTasks(itemsCopy);
+  const editTask = (index) => {
+    const task = filteredTasks[index];
+    setEditingTask(task);
+    setShowAddModal(true);
   };
 
   const clearAllTasks = () => {
-    setTaskItems([]);
-    saveTasks([]);
+    Alert.alert(
+      'Clear All Tasks',
+      'Are you sure you want to delete all tasks? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: () => {
+            setTasks([]);
+            saveTasks([]);
+          },
+        },
+      ]
+    );
   };
 
-  const renderItem = ({ item, index }) => (
-    <View style={styles.taskItem}>
-      <TouchableOpacity onPress={() => toggleTaskDone(index)}>
-        <Text style={[styles.taskText, item.done && styles.taskDone]}>
-          {item.done ? '✅ ' : '⬜️ '}
-          {item.text}
-        </Text>
-      </TouchableOpacity>
+  // Refresh
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    loadTasks().then(() => setRefreshing(false));
+  }, []);
 
-      <TouchableOpacity onPress={() => deleteTask(index)}>
-        <Text style={styles.deleteText}>Delete</Text>
-      </TouchableOpacity>
+  // Render Methods
+  const renderTaskItem = ({ item, index }) => (
+    <TaskItem
+      task={item}
+      index={index}
+      onToggle={toggleTask}
+      onDelete={deleteTask}
+      onEdit={editTask}
+      fadeAnim={fadeAnim}
+    />
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateEmoji}>📝</Text>
+      <Text style={styles.emptyStateTitle}>No Tasks Found</Text>
+      <Text style={styles.emptyStateSubtitle}>
+        {tasks.length === 0 
+          ? 'Start by adding your first task!'
+          : 'Try adjusting your filters or search query.'
+        }
+      </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My ToDo List</Text>
-
-      <View style={styles.inputWrapper}>
-        <TextInput
-          style={styles.input}
-          placeholder="Write a task"
-          value={task}
-          onChangeText={text => setTask(text)}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Text style={styles.addButtonText}>Add</Text>
-        </TouchableOpacity>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>✅ Advanced ToDo</Text>
+        {tasks.length > 0 && (
+          <TouchableOpacity onPress={clearAllTasks}>
+            <Text style={styles.clearAllButton}>Clear All</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-        <FlatList
-          data={taskItems}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No tasks yet. Add some!</Text>
-          }
-        />
+      {/* Task Statistics */}
+      {tasks.length > 0 && <TaskStats tasks={tasks} />}
+
+      {/* Search and Filter */}
+      <TaskFilter
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        selectedPriority={selectedPriority}
+        onPriorityChange={setSelectedPriority}
+        showCompleted={showCompleted}
+        onToggleCompleted={() => setShowCompleted(!showCompleted)}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        categories={getUniqueCategories(tasks)}
+      />
+
+      {/* Task List */}
+      <FlatList
+        data={filteredTasks}
+        renderItem={renderTaskItem}
+        keyExtractor={(item) => item.id}
+        style={styles.taskList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+
+      {/* Floating Action Button */}
+      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
+        <TouchableOpacity
+          style={styles.fabButton}
+          onPress={() => {
+            animateFAB();
+            setEditingTask(null);
+            setShowAddModal(true);
+          }}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
       </Animated.View>
 
-      {taskItems.length > 0 && (
-        <TouchableOpacity style={styles.clearButton} onPress={clearAllTasks}>
-          <Text style={styles.clearButtonText}>Clear All</Text>
-        </TouchableOpacity>
-      )}
+      {/* Add/Edit Task Modal */}
+      <AddTaskModal
+        visible={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingTask(null);
+        }}
+        onAddTask={(task) => {
+          if (editingTask) {
+            updateTask(task);
+          } else {
+            addTask(task);
+          }
+          setEditingTask(null);
+        }}
+        editingTask={editingTask}
+      />
     </View>
   );
 }
@@ -124,78 +300,77 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    backgroundColor: '#f0f8ff',
+    backgroundColor: '#F5F7FA',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    borderColor: '#888',
-    borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    height: 40,
-    backgroundColor: '#fff',
-  },
-  addButton: {
-    backgroundColor: '#007BFF',
-    justifyContent: 'center',
-    paddingHorizontal: 15,
-    marginLeft: 10,
-    borderRadius: 6,
-  },
-  addButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  taskItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 6,
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    elevation: 1,
-  },
-  taskText: {
-    fontSize: 16,
-  },
-  taskDone: {
-    textDecorationLine: 'line-through',
-    color: 'gray',
-  },
-  deleteText: {
-    color: '#FF4136',
-    fontWeight: 'bold',
-  },
-  clearButton: {
-    backgroundColor: '#FF4136',
-    padding: 15,
-    borderRadius: 6,
-    marginVertical: 10,
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
-  clearButtonText: {
-    color: 'white',
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    fontSize: 16,
+    color: '#2C3E50',
   },
-  emptyText: {
-    textAlign: 'center',
-    color: '#888',
-    fontStyle: 'italic',
-    marginTop: 30,
+  clearAllButton: {
     fontSize: 16,
+    color: '#E74C3C',
+    fontWeight: '600',
+  },
+  taskList: {
+    flex: 1,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyStateEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: '#7F8C8D',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+  },
+  fabButton: {
+    backgroundColor: '#3498DB',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
