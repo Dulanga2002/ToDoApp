@@ -38,6 +38,7 @@ export default function App() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [showCompleted, setShowCompleted] = useState(true);
   const [sortBy, setSortBy] = useState('created');
+  const [darkMode, setDarkMode] = useState(false);
   
   // Animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -55,6 +56,7 @@ export default function App() {
 
   // Animations
   const startFadeAnimation = () => {
+    fadeAnim.setValue(0); // Reset animation value
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
@@ -181,8 +183,8 @@ export default function App() {
 
   const clearAllTasks = () => {
     Alert.alert(
-      'Clear All Tasks',
-      'Are you sure you want to delete all tasks? This action cannot be undone.',
+      '🗑️ Clear All Tasks',
+      `Are you sure you want to delete all ${tasks.length} tasks? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -191,6 +193,9 @@ export default function App() {
           onPress: () => {
             setTasks([]);
             saveTasks([]);
+            Alert.alert('✅ Success', 'All tasks have been cleared!', [
+              { text: 'OK', style: 'default' }
+            ]);
           },
         },
       ]
@@ -203,6 +208,22 @@ export default function App() {
     loadTasks().then(() => setRefreshing(false));
   }, []);
 
+  // Export tasks as JSON
+  const exportTasks = () => {
+    const tasksData = {
+      exportDate: new Date().toISOString(),
+      totalTasks: tasks.length,
+      tasks: tasks
+    };
+    
+    console.log('📤 Tasks Export:', JSON.stringify(tasksData, null, 2));
+    Alert.alert(
+      '📤 Tasks Exported',
+      `${tasks.length} tasks exported to console log. Check developer console for JSON data.`,
+      [{ text: 'OK', style: 'default' }]
+    );
+  };
+
   // Render Methods
   const renderTaskItem = ({ item, index }) => (
     <TaskItem
@@ -211,7 +232,6 @@ export default function App() {
       onToggle={toggleTask}
       onDelete={deleteTask}
       onEdit={editTask}
-      fadeAnim={fadeAnim}
     />
   );
 
@@ -229,21 +249,34 @@ export default function App() {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={[styles.container, darkMode && styles.containerDark]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={darkMode ? "#2C3E50" : "#FFFFFF"} />
       
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>✅  To Do List</Text>
-        {tasks.length > 0 && (
-          <TouchableOpacity onPress={clearAllTasks}>
-            <Text style={styles.clearAllButton}>Clear All</Text>
+      <View style={[styles.header, darkMode && styles.headerDark]}>
+        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>✅  To Do List</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            onPress={() => setDarkMode(!darkMode)}
+            style={styles.darkModeButton}
+          >
+            <Text style={styles.darkModeText}>{darkMode ? '☀️' : '🌙'}</Text>
           </TouchableOpacity>
-        )}
+          {tasks.length > 0 && (
+            <TouchableOpacity onPress={exportTasks} style={styles.exportButton}>
+              <Text style={styles.exportButtonText}>📤</Text>
+            </TouchableOpacity>
+          )}
+          {tasks.length > 0 && (
+            <TouchableOpacity onPress={clearAllTasks}>
+              <Text style={[styles.clearAllButton, darkMode && styles.clearAllButtonDark]}>Clear All</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Task Statistics */}
-      {tasks.length > 0 && <TaskStats tasks={tasks} />}
+      {tasks.length > 0 && <TaskStats tasks={tasks} darkMode={darkMode} />}
 
       {/* Search and Filter */}
       <TaskFilter
@@ -258,6 +291,7 @@ export default function App() {
         sortBy={sortBy}
         onSortChange={setSortBy}
         categories={getUniqueCategories(tasks)}
+        darkMode={darkMode}
       />
 
       {/* Task List */}
@@ -313,6 +347,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
+  containerDark: {
+    backgroundColor: '#1A1A1A',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -324,15 +361,43 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
+  headerDark: {
+    backgroundColor: '#2C3E50',
+    borderBottomColor: '#34495E',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  darkModeButton: {
+    marginRight: 15,
+    padding: 8,
+  },
+  darkModeText: {
+    fontSize: 20,
+  },
+  exportButton: {
+    marginRight: 15,
+    padding: 8,
+  },
+  exportButtonText: {
+    fontSize: 18,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2C3E50',
   },
+  headerTitleDark: {
+    color: '#FFFFFF',
+  },
   clearAllButton: {
     fontSize: 16,
     color: '#E74C3C',
     fontWeight: '600',
+  },
+  clearAllButtonDark: {
+    color: '#FF6B6B',
   },
   taskList: {
     flex: 1,

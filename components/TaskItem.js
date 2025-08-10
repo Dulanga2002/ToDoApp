@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   Alert,
 } from 'react-native';
 
@@ -13,8 +12,7 @@ const TaskItem = ({
   onToggle, 
   onDelete, 
   onEdit,
-  index,
-  fadeAnim 
+  index
 }) => {
   const handleDelete = () => {
     Alert.alert(
@@ -48,10 +46,9 @@ const TaskItem = ({
   };
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.container,
-        { opacity: fadeAnim },
         task.done && styles.completedContainer,
       ]}
     >
@@ -63,9 +60,15 @@ const TaskItem = ({
         </TouchableOpacity>
         
         <View style={styles.taskContent}>
-          <Text style={[styles.taskText, task.done && styles.completedText]}>
-            {task.text}
-          </Text>
+          <TouchableOpacity 
+            onPress={() => onEdit(index)}
+            style={styles.taskTextContainer}
+          >
+            <Text style={[styles.taskText, task.done && styles.completedText]}>
+              {task.text}
+            </Text>
+            <Text style={styles.tapHint}>Tap to edit</Text>
+          </TouchableOpacity>
           
           {task.description && (
             <Text style={[styles.description, task.done && styles.completedText]}>
@@ -110,7 +113,7 @@ const TaskItem = ({
           <Text style={styles.actionText}>🗑️</Text>
         </TouchableOpacity>
       </View>
-    </Animated.View>
+    </View>
   );
 };
 
@@ -151,11 +154,19 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
   },
+  taskTextContainer: {
+    marginBottom: 4,
+  },
   taskText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2C3E50',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  tapHint: {
+    fontSize: 11,
+    color: '#BDC3C7',
+    fontStyle: 'italic',
   },
   completedText: {
     textDecorationLine: 'line-through',
