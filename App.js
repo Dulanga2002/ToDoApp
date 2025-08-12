@@ -9,6 +9,7 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -31,6 +32,7 @@ export default function App() {
   // Modal States
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
   
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -208,6 +210,22 @@ export default function App() {
     loadTasks().then(() => setRefreshing(false));
   }, []);
 
+  // Get overdue tasks
+  const getOverdueTasks = () => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    
+    return tasks.filter(task => {
+      if (task.done) return false; // Skip completed tasks
+      if (!task.dueDate) return false; // Skip tasks without due date
+      
+      const taskDueDate = new Date(task.dueDate);
+      return taskDueDate < today;
+    });
+  };
+
+  const overdueTasks = getOverdueTasks();
+
   // ...existing code...
 
   // Render Methods
@@ -248,6 +266,20 @@ export default function App() {
           >
             <Text style={styles.darkModeText}>{darkMode ? '☀️' : '🌙'}</Text>
           </TouchableOpacity>
+          
+          {/* Overdue Tasks Button */}
+          {overdueTasks.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setShowOverdueModal(true)}
+              style={styles.overdueButton}
+            >
+              <Text style={styles.overdueButtonText}>🔔</Text>
+              <View style={styles.overdueBadge}>
+                <Text style={styles.overdueBadgeText}>{overdueTasks.length}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+          
           {/* Removed export tasks button */}
           {tasks.length > 0 && (
             <TouchableOpacity onPress={clearAllTasks}>
@@ -320,6 +352,88 @@ export default function App() {
         }}
         editingTask={editingTask}
       />
+
+      {/* Overdue Tasks Modal */}
+      {showOverdueModal && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.overdueModal, darkMode && styles.overdueModalDark]}>
+            <View style={styles.overdueHeader}>
+              <Text style={[styles.overdueTitle, darkMode && styles.overdueTitleDark]}>
+                🔔 Overdue Tasks ({overdueTasks.length})
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowOverdueModal(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={overdueTasks}
+              keyExtractor={(item) => item.id}
+              style={styles.overdueList}
+              renderItem={({ item }) => {
+                const daysPast = Math.floor(
+                  (new Date() - new Date(item.dueDate)) / (1000 * 60 * 60 * 24)
+                );
+                
+                return (
+                  <TouchableOpacity 
+                    style={[styles.overdueItem, darkMode && styles.overdueItemDark]}
+                    onPress={() => {
+                      setShowOverdueModal(false);
+                      const taskIndex = filteredTasks.findIndex(t => t.id === item.id);
+                      if (taskIndex !== -1) {
+                        editTask(taskIndex);
+                      }
+                    }}
+                  >
+                    <View style={styles.overdueItemContent}>
+                      <Text style={[styles.overdueTaskText, darkMode && styles.overdueTaskTextDark]}>
+                        {item.text}
+                      </Text>
+                      <Text style={styles.overdueDateText}>
+                        {daysPast === 0 ? 'Due today' : `${daysPast} day${daysPast > 1 ? 's' : ''} overdue`}
+                      </Text>
+                      {item.category && (
+                        <Text style={[styles.overdueCategory, darkMode && styles.overdueCategoryDark]}>
+                          📂 {item.category}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.overdueActions}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const taskIndex = filteredTasks.findIndex(t => t.id === item.id);
+                          if (taskIndex !== -1) {
+                            toggleTask(taskIndex);
+                          }
+                        }}
+                        style={styles.overdueCompleteButton}
+                      >
+                        <Text style={styles.overdueCompleteText}>✓</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={() => (
+                <Text style={[styles.noOverdueText, darkMode && styles.noOverdueTextDark]}>
+                  🎉 No overdue tasks! Great job!
+                </Text>
+              )}
+            />
+            
+            <TouchableOpacity 
+              style={[styles.overdueCloseButton, darkMode && styles.overdueCloseButtonDark]}
+              onPress={() => setShowOverdueModal(false)}
+            >
+              <Text style={styles.overdueCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -380,6 +494,161 @@ const styles = StyleSheet.create({
   },
   clearAllButtonDark: {
     color: '#FF6B6B',
+  },
+  overdueButton: {
+    marginRight: 15,
+    padding: 8,
+    position: 'relative',
+  },
+  overdueButtonText: {
+    fontSize: 20,
+  },
+  overdueBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#E74C3C',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overdueBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  overdueModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  overdueModalDark: {
+    backgroundColor: '#2C3E50',
+  },
+  overdueHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  overdueTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2C3E50',
+  },
+  overdueTitleDark: {
+    color: '#FFFFFF',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#7F8C8D',
+  },
+  overdueList: {
+    maxHeight: 400,
+  },
+  overdueItem: {
+    backgroundColor: '#FFF3E0',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 5,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  overdueItemDark: {
+    backgroundColor: '#34495E',
+    borderLeftColor: '#F39C12',
+  },
+  overdueItemContent: {
+    flex: 1,
+  },
+  overdueTaskText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 4,
+  },
+  overdueTaskTextDark: {
+    color: '#FFFFFF',
+  },
+  overdueDateText: {
+    fontSize: 14,
+    color: '#E74C3C',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  overdueCategory: {
+    fontSize: 12,
+    color: '#7F8C8D',
+  },
+  overdueCategoryDark: {
+    color: '#BDC3C7',
+  },
+  overdueActions: {
+    flexDirection: 'row',
+  },
+  overdueCompleteButton: {
+    backgroundColor: '#27AE60',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overdueCompleteText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  overdueCloseButton: {
+    backgroundColor: '#3498DB',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  overdueCloseButtonDark: {
+    backgroundColor: '#2980B9',
+  },
+  overdueCloseButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  noOverdueText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#27AE60',
+    fontStyle: 'italic',
+    padding: 20,
+  },
+  noOverdueTextDark: {
+    color: '#2ECC71',
   },
   taskList: {
     flex: 1,
