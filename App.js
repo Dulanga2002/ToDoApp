@@ -18,11 +18,15 @@ import TaskItem from './components/TaskItem';
 import AddTaskModal from './components/AddTaskModal';
 import TaskFilter from './components/TaskFilter';
 import TaskStats from './components/TaskStats';
+import SettingsScreen from './components/SettingsScreen';
 
 // Utils
 import { filterTasks, sortTasks, getUniqueCategories, generateTaskId } from './utils/taskUtils';
 
 export default function App() {
+  // Screen Navigation
+  const [currentScreen, setCurrentScreen] = useState('tasks');
+  
   // State Management
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
@@ -254,185 +258,195 @@ export default function App() {
 
   return (
     <View style={[styles.container, darkMode && styles.containerDark]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={darkMode ? "#2C3E50" : "#FFFFFF"} />
-      
-      {/* Header */}
-      <View style={[styles.header, darkMode && styles.headerDark]}>
-        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>✅  To Do List</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity 
-            onPress={() => setDarkMode(!darkMode)}
-            style={styles.darkModeButton}
-          >
-            <Text style={styles.darkModeText}>{darkMode ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
+      {currentScreen === 'settings' ? (
+        <SettingsScreen 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode}
+          onBack={() => setCurrentScreen('tasks')}
+        />
+      ) : (
+        <>
+          <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={darkMode ? "#2C3E50" : "#FFFFFF"} />
           
-          {/* Overdue Tasks Button */}
-          {overdueTasks.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setShowOverdueModal(true)}
-              style={styles.overdueButton}
-            >
-              <Text style={styles.overdueButtonText}>🔔</Text>
-              <View style={styles.overdueBadge}>
-                <Text style={styles.overdueBadgeText}>{overdueTasks.length}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          
-          {/* Removed export tasks button */}
-          {tasks.length > 0 && (
-            <TouchableOpacity onPress={clearAllTasks}>
-              <Text style={[styles.clearAllButton, darkMode && styles.clearAllButtonDark]}>Clear All</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Task Statistics */}
-      {tasks.length > 0 && <TaskStats tasks={tasks} darkMode={darkMode} />}
-
-      {/* Search and Filter */}
-      <TaskFilter
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        selectedPriority={selectedPriority}
-        onPriorityChange={setSelectedPriority}
-        showCompleted={showCompleted}
-        onToggleCompleted={() => setShowCompleted(!showCompleted)}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        categories={getUniqueCategories(tasks)}
-        darkMode={darkMode}
-      />
-
-      {/* Task List */}
-      <FlatList
-        data={filteredTasks}
-        renderItem={renderTaskItem}
-        keyExtractor={(item) => item.id}
-        style={styles.taskList}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      />
-
-      {/* Floating Action Button */}
-      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
-        <TouchableOpacity
-          style={styles.fabButton}
-          onPress={() => {
-            animateFAB();
-            setEditingTask(null);
-            setShowAddModal(true);
-          }}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Add/Edit Task Modal */}
-      <AddTaskModal
-        visible={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingTask(null);
-        }}
-        onAddTask={(task) => {
-          if (editingTask) {
-            updateTask(task);
-          } else {
-            addTask(task);
-          }
-          setEditingTask(null);
-        }}
-        editingTask={editingTask}
-      />
-
-      {/* Overdue Tasks Modal */}
-      {showOverdueModal && (
-        <View style={styles.modalOverlay}>
-          <View style={[styles.overdueModal, darkMode && styles.overdueModalDark]}>
-            <View style={styles.overdueHeader}>
-              <Text style={[styles.overdueTitle, darkMode && styles.overdueTitleDark]}>
-                🔔 Overdue Tasks ({overdueTasks.length})
-              </Text>
+          {/* Header */}
+          <View style={[styles.header, darkMode && styles.headerDark]}>
+            <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>✅  To Do List</Text>
+            <View style={styles.headerActions}>
               <TouchableOpacity 
-                onPress={() => setShowOverdueModal(false)}
-                style={styles.closeButton}
+                onPress={() => setCurrentScreen('settings')}
+                style={styles.settingsButton}
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <Text style={styles.settingsButtonText}>⚙️</Text>
               </TouchableOpacity>
+              
+              {/* Overdue Tasks Button */}
+              {overdueTasks.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setShowOverdueModal(true)}
+                  style={styles.overdueButton}
+                >
+                  <Text style={styles.overdueButtonText}>🔔</Text>
+                  <View style={styles.overdueBadge}>
+                    <Text style={styles.overdueBadgeText}>{overdueTasks.length}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              
+              {/* Removed export tasks button */}
+              {tasks.length > 0 && (
+                <TouchableOpacity onPress={clearAllTasks}>
+                  <Text style={[styles.clearAllButton, darkMode && styles.clearAllButtonDark]}>Clear All</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            
-            <FlatList
-              data={overdueTasks}
-              keyExtractor={(item) => item.id}
-              style={styles.overdueList}
-              renderItem={({ item }) => {
-                const daysPast = Math.floor(
-                  (new Date() - new Date(item.dueDate)) / (1000 * 60 * 60 * 24)
-                );
-                
-                return (
+          </View>
+
+          {/* Task Statistics */}
+          {tasks.length > 0 && <TaskStats tasks={tasks} darkMode={darkMode} />}
+
+          {/* Search and Filter */}
+          <TaskFilter
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            selectedPriority={selectedPriority}
+            onPriorityChange={setSelectedPriority}
+            showCompleted={showCompleted}
+            onToggleCompleted={() => setShowCompleted(!showCompleted)}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            categories={getUniqueCategories(tasks)}
+            darkMode={darkMode}
+          />
+
+          {/* Task List */}
+          <FlatList
+            data={filteredTasks}
+            renderItem={renderTaskItem}
+            keyExtractor={(item) => item.id}
+            style={styles.taskList}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
+
+          {/* Floating Action Button */}
+          <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
+            <TouchableOpacity
+              style={styles.fabButton}
+              onPress={() => {
+                animateFAB();
+                setEditingTask(null);
+                setShowAddModal(true);
+              }}
+            >
+              <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Add/Edit Task Modal */}
+          <AddTaskModal
+            visible={showAddModal}
+            onClose={() => {
+              setShowAddModal(false);
+              setEditingTask(null);
+            }}
+            onAddTask={(task) => {
+              if (editingTask) {
+                updateTask(task);
+              } else {
+                addTask(task);
+              }
+              setEditingTask(null);
+            }}
+            editingTask={editingTask}
+          />
+
+          {/* Overdue Tasks Modal */}
+          {showOverdueModal && (
+            <View style={styles.modalOverlay}>
+              <View style={[styles.overdueModal, darkMode && styles.overdueModalDark]}>
+                <View style={styles.overdueHeader}>
+                  <Text style={[styles.overdueTitle, darkMode && styles.overdueTitleDark]}>
+                    🔔 Overdue Tasks ({overdueTasks.length})
+                  </Text>
                   <TouchableOpacity 
-                    style={[styles.overdueItem, darkMode && styles.overdueItemDark]}
-                    onPress={() => {
-                      setShowOverdueModal(false);
-                      const taskIndex = filteredTasks.findIndex(t => t.id === item.id);
-                      if (taskIndex !== -1) {
-                        editTask(taskIndex);
-                      }
-                    }}
+                    onPress={() => setShowOverdueModal(false)}
+                    style={styles.closeButton}
                   >
-                    <View style={styles.overdueItemContent}>
-                      <Text style={[styles.overdueTaskText, darkMode && styles.overdueTaskTextDark]}>
-                        {item.text}
-                      </Text>
-                      <Text style={styles.overdueDateText}>
-                        {daysPast === 0 ? 'Due today' : `${daysPast} day${daysPast > 1 ? 's' : ''} overdue`}
-                      </Text>
-                      {item.category && (
-                        <Text style={[styles.overdueCategory, darkMode && styles.overdueCategoryDark]}>
-                          📂 {item.category}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={styles.overdueActions}>
-                      <TouchableOpacity
+                    <Text style={styles.closeButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <FlatList
+                  data={overdueTasks}
+                  keyExtractor={(item) => item.id}
+                  style={styles.overdueList}
+                  renderItem={({ item }) => {
+                    const daysPast = Math.floor(
+                      (new Date() - new Date(item.dueDate)) / (1000 * 60 * 60 * 24)
+                    );
+                    
+                    return (
+                      <TouchableOpacity 
+                        style={[styles.overdueItem, darkMode && styles.overdueItemDark]}
                         onPress={() => {
+                          setShowOverdueModal(false);
                           const taskIndex = filteredTasks.findIndex(t => t.id === item.id);
                           if (taskIndex !== -1) {
-                            toggleTask(taskIndex);
+                            editTask(taskIndex);
                           }
                         }}
-                        style={styles.overdueCompleteButton}
                       >
-                        <Text style={styles.overdueCompleteText}>✓</Text>
+                        <View style={styles.overdueItemContent}>
+                          <Text style={[styles.overdueTaskText, darkMode && styles.overdueTaskTextDark]}>
+                            {item.text}
+                          </Text>
+                          <Text style={styles.overdueDateText}>
+                            {daysPast === 0 ? 'Due today' : `${daysPast} day${daysPast > 1 ? 's' : ''} overdue`}
+                          </Text>
+                          {item.category && (
+                            <Text style={[styles.overdueCategory, darkMode && styles.overdueCategoryDark]}>
+                              📂 {item.category}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={styles.overdueActions}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              const taskIndex = filteredTasks.findIndex(t => t.id === item.id);
+                              if (taskIndex !== -1) {
+                                toggleTask(taskIndex);
+                              }
+                            }}
+                            style={styles.overdueCompleteButton}
+                          >
+                            <Text style={styles.overdueCompleteText}>✓</Text>
+                          </TouchableOpacity>
+                        </View>
                       </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-              ListEmptyComponent={() => (
-                <Text style={[styles.noOverdueText, darkMode && styles.noOverdueTextDark]}>
-                  🎉 No overdue tasks! Great job!
-                </Text>
-              )}
-            />
-            
-            <TouchableOpacity 
-              style={[styles.overdueCloseButton, darkMode && styles.overdueCloseButtonDark]}
-              onPress={() => setShowOverdueModal(false)}
-            >
-              <Text style={styles.overdueCloseButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+                    );
+                  }}
+                  ListEmptyComponent={() => (
+                    <Text style={[styles.noOverdueText, darkMode && styles.noOverdueTextDark]}>
+                      🎉 No overdue tasks! Great job!
+                    </Text>
+                  )}
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.overdueCloseButton, darkMode && styles.overdueCloseButtonDark]}
+                  onPress={() => setShowOverdueModal(false)}
+                >
+                  <Text style={styles.overdueCloseButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -465,11 +479,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  darkModeButton: {
+  settingsButton: {
     marginRight: 15,
     padding: 8,
   },
-  darkModeText: {
+  settingsButtonText: {
     fontSize: 20,
   },
   exportButton: {
