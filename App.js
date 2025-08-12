@@ -208,21 +208,7 @@ export default function App() {
     loadTasks().then(() => setRefreshing(false));
   }, []);
 
-  // Export tasks as JSON
-  const exportTasks = () => {
-    const tasksData = {
-      exportDate: new Date().toISOString(),
-      totalTasks: tasks.length,
-      tasks: tasks
-    };
-    
-    console.log('📤 Tasks Export:', JSON.stringify(tasksData, null, 2));
-    Alert.alert(
-      '📤 Tasks Exported',
-      `${tasks.length} tasks exported to console log. Check developer console for JSON data.`,
-      [{ text: 'OK', style: 'default' }]
-    );
-  };
+  // ...existing code...
 
   // Render Methods
   const renderTaskItem = ({ item, index }) => (
@@ -262,11 +248,7 @@ export default function App() {
           >
             <Text style={styles.darkModeText}>{darkMode ? '☀️' : '🌙'}</Text>
           </TouchableOpacity>
-          {tasks.length > 0 && (
-            <TouchableOpacity onPress={exportTasks} style={styles.exportButton}>
-              <Text style={styles.exportButtonText}>📤</Text>
-            </TouchableOpacity>
-          )}
+          {/* Removed export tasks button */}
           {tasks.length > 0 && (
             <TouchableOpacity onPress={clearAllTasks}>
               <Text style={[styles.clearAllButton, darkMode && styles.clearAllButtonDark]}>Clear All</Text>
