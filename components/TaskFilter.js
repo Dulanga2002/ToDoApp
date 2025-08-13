@@ -7,27 +7,31 @@ import {
   TextInput,
 } from 'react-native';
 
+// This component provides search and filter options for tasks
 const TaskFilter = ({ 
-  searchQuery, 
-  onSearchChange, 
-  selectedCategory, 
-  onCategoryChange,
-  selectedPriority,
-  onPriorityChange,
-  showCompleted,
-  onToggleCompleted,
-  sortBy,
-  onSortChange,
-  categories = []
+  searchQuery, // Current search text
+  onSearchChange, // Function called when search text changes
+  selectedCategory, // Currently selected category filter
+  onCategoryChange, // Function called when category filter changes
+  selectedPriority, // Currently selected priority filter
+  onPriorityChange, // Function called when priority filter changes
+  showCompleted, // Whether completed tasks are shown
+  onToggleCompleted, // Function to show/hide completed tasks
+  sortBy, // Current sorting method
+  onSortChange, // Function called when sort method changes
+  categories = [] // List of available categories
 }) => {
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(false); // Whether filter options are visible
 
+  // Available priority options
   const priorities = ['all', 'low', 'medium', 'high'];
+  
+  // Available sorting options
   const sortOptions = [
-    { value: 'created', label: 'Created Date' },
-    { value: 'dueDate', label: 'Due Date' },
-    { value: 'priority', label: 'Priority' },
-    { value: 'alphabetical', label: 'Alphabetical' }
+    { value: 'created', label: 'Created Date' }, // Sort by when task was made
+    { value: 'dueDate', label: 'Due Date' }, // Sort by when task is due
+    { value: 'priority', label: 'Priority' }, // Sort by importance level
+    { value: 'alphabetical', label: 'Alphabetical' } // Sort by task title A-Z
   ];
 
   return (

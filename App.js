@@ -22,139 +22,150 @@ import TaskStats from './components/TaskStats';
 import { filterTasks, sortTasks, getUniqueCategories, generateTaskId } from './utils/taskUtils';
 
 export default function App() {
-  // State Management
-  const [tasks, setTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  // State Management - stores all the data for our app
+  const [tasks, setTasks] = useState([]); // Main list of all tasks
+  const [filteredTasks, setFilteredTasks] = useState([]); // Tasks after applying filters
+  const [loading, setLoading] = useState(false); // Shows loading spinner when true
+  const [refreshing, setRefreshing] = useState(false); // For pull-to-refresh feature
   
-  // Modal States
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
+  // Modal States - controls which popup windows are open
+  const [showAddModal, setShowAddModal] = useState(false); // Add new task popup
+  const [editingTask, setEditingTask] = useState(null); // Task being edited (null = not editing)
   
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedPriority, setSelectedPriority] = useState('all');
-  const [showCompleted, setShowCompleted] = useState(true);
-  const [sortBy, setSortBy] = useState('created');
-  const [darkMode, setDarkMode] = useState(false);
+  // Filter States - controls how tasks are displayed
+  const [searchQuery, setSearchQuery] = useState(''); // Text to search for
+  const [selectedCategory, setSelectedCategory] = useState('all'); // Which category to show
+  const [selectedPriority, setSelectedPriority] = useState('all'); // Which priority to show
+  const [showCompleted, setShowCompleted] = useState(true); // Show/hide completed tasks
+  const [sortBy, setSortBy] = useState('created'); // How to sort tasks (by date, priority, etc.)
+  const [darkMode, setDarkMode] = useState(false); // Light or dark theme
   
-  // Animation
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const fabScale = useRef(new Animated.Value(1)).current;
+  // Animation - makes the app look smooth and beautiful
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Fade in/out effect
+  const fabScale = useRef(new Animated.Value(1)).current; // Scale effect for floating button
 
-  // Effects
+  // Effects - runs when the app starts or data changes
   useEffect(() => {
-    loadTasks();
-    startFadeAnimation();
+    loadTasks(); // Load saved tasks from phone storage
+    startFadeAnimation(); // Start the fade-in animation
   }, []);
 
   useEffect(() => {
-    applyFiltersAndSort();
+    applyFiltersAndSort(); // Update the displayed tasks when filters change
   }, [tasks, searchQuery, selectedCategory, selectedPriority, showCompleted, sortBy]);
 
-  // Animations
+  // Animation Functions - make the app look smooth
+  
+  // Makes the app fade in smoothly when it starts
   const startFadeAnimation = () => {
-    fadeAnim.setValue(0); // Reset animation value
+    fadeAnim.setValue(0); // Start invisible
     Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
+      toValue: 1, // Fade to fully visible
+      duration: 500, // Takes 0.5 seconds
       useNativeDriver: true,
     }).start();
   };
 
+  // Makes the + button bounce when pressed
   const animateFAB = () => {
     Animated.sequence([
       Animated.timing(fabScale, {
-        toValue: 0.8,
+        toValue: 0.8, // Shrink to 80% size
         duration: 100,
         useNativeDriver: true,
       }),
       Animated.timing(fabScale, {
-        toValue: 1,
+        toValue: 1, // Back to normal size
         duration: 100,
         useNativeDriver: true,
       }),
     ]).start();
   };
 
-  // Data Management
+  // Data Management Functions - handles saving and loading tasks
+  
+  // Loads all tasks from phone storage when app starts
   const loadTasks = async () => {
     try {
-      setLoading(true);
-      const savedTasks = await AsyncStorage.getItem('@advanced_tasks');
+      setLoading(true); // Show loading indicator
+      const savedTasks = await AsyncStorage.getItem('@advanced_tasks'); // Get tasks from storage
       if (savedTasks) {
-        const parsedTasks = JSON.parse(savedTasks);
-        setTasks(parsedTasks);
+        const parsedTasks = JSON.parse(savedTasks); // Convert text back to task objects
+        setTasks(parsedTasks); // Put tasks in our app
       }
     } catch (error) {
       console.error('Error loading tasks:', error);
-      Alert.alert('Error', 'Failed to load tasks');
+      Alert.alert('Error', 'Failed to load tasks'); // Show error message
     } finally {
-      setLoading(false);
+      setLoading(false); // Hide loading indicator
     }
   };
 
+  // Saves all tasks to phone storage
   const saveTasks = async (tasksToSave) => {
     try {
-      await AsyncStorage.setItem('@advanced_tasks', JSON.stringify(tasksToSave));
+      await AsyncStorage.setItem('@advanced_tasks', JSON.stringify(tasksToSave)); // Convert tasks to text and save
     } catch (error) {
       console.error('Error saving tasks:', error);
-      Alert.alert('Error', 'Failed to save tasks');
+      Alert.alert('Error', 'Failed to save tasks'); // Show error message
     }
   };
 
+  // Applies search filters and sorts the task list
   const applyFiltersAndSort = () => {
     const filters = {
-      searchQuery,
-      selectedCategory,
-      selectedPriority,
-      showCompleted,
+      searchQuery, // Text to search for
+      selectedCategory, // Category filter
+      selectedPriority, // Priority filter
+      showCompleted, // Show/hide completed tasks
     };
     
-    let filtered = filterTasks(tasks, filters);
-    filtered = sortTasks(filtered, sortBy);
-    setFilteredTasks(filtered);
+    let filtered = filterTasks(tasks, filters); // Apply all filters
+    filtered = sortTasks(filtered, sortBy); // Sort the results
+    setFilteredTasks(filtered); // Update the displayed task list
   };
 
-  // Task Operations
+  // Task Operations - functions that add, edit, and manage tasks
+  
+  // Adds a brand new task to the list
   const addTask = (newTask) => {
     const taskWithId = {
-      ...newTask,
-      id: newTask.id || generateTaskId(),
-      createdAt: newTask.createdAt || new Date().toISOString(),
+      ...newTask, // Copy all task details
+      id: newTask.id || generateTaskId(), // Give it a unique ID
+      createdAt: newTask.createdAt || new Date().toISOString(), // Record when it was created
     };
     
-    const updatedTasks = [...tasks, taskWithId];
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    const updatedTasks = [...tasks, taskWithId]; // Add to existing tasks
+    setTasks(updatedTasks); // Update the app
+    saveTasks(updatedTasks); // Save to phone storage
   };
 
+  // Updates an existing task with new information
   const updateTask = (updatedTask) => {
     const updatedTasks = tasks.map(task => 
       task.id === updatedTask.id 
-        ? { ...updatedTask, updatedAt: new Date().toISOString() }
-        : task
+        ? { ...updatedTask, updatedAt: new Date().toISOString() } // Update this task with timestamp
+        : task // Keep other tasks unchanged
     );
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    setTasks(updatedTasks); // Update the app
+    saveTasks(updatedTasks); // Save to phone storage
   };
 
+  // Marks a task as complete or incomplete (checkbox toggle)
   const toggleTask = (index) => {
-    const task = filteredTasks[index];
-    const originalIndex = tasks.findIndex(t => t.id === task.id);
+    const task = filteredTasks[index]; // Get the task that was clicked
+    const originalIndex = tasks.findIndex(t => t.id === task.id); // Find it in the full list
     
     if (originalIndex !== -1) {
-      const updatedTasks = [...tasks];
-      const wasCompleted = updatedTasks[originalIndex].done;
+      const updatedTasks = [...tasks]; // Copy all tasks
+      const wasCompleted = updatedTasks[originalIndex].done; // Remember if it was already done
       updatedTasks[originalIndex] = {
         ...updatedTasks[originalIndex],
-        done: !updatedTasks[originalIndex].done,
-        updatedAt: new Date().toISOString(),
+        done: !updatedTasks[originalIndex].done, // Flip complete/incomplete
+        updatedAt: new Date().toISOString(), // Record when changed
       };
       
-      // Show celebration for task completion
+      // Show celebration message when task is completed
       if (!wasCompleted && updatedTasks[originalIndex].done) {
         Alert.alert(
           '🎉 Task Completed!',
@@ -163,36 +174,39 @@ export default function App() {
         );
       }
       
-      setTasks(updatedTasks);
-      saveTasks(updatedTasks);
+      setTasks(updatedTasks); // Update the app
+      saveTasks(updatedTasks); // Save to phone storage
     }
   };
 
+  // Permanently removes a task from the list
   const deleteTask = (index) => {
-    const task = filteredTasks[index];
-    const updatedTasks = tasks.filter(t => t.id !== task.id);
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
+    const task = filteredTasks[index]; // Get the task to delete
+    const updatedTasks = tasks.filter(t => t.id !== task.id); // Remove it from all tasks
+    setTasks(updatedTasks); // Update the app
+    saveTasks(updatedTasks); // Save to phone storage
   };
 
+  // Opens the edit popup for a specific task
   const editTask = (index) => {
-    const task = filteredTasks[index];
-    setEditingTask(task);
-    setShowAddModal(true);
+    const task = filteredTasks[index]; // Get the task to edit
+    setEditingTask(task); // Set it as the task being edited
+    setShowAddModal(true); // Open the add/edit popup
   };
 
+  // Removes all tasks after asking for confirmation
   const clearAllTasks = () => {
     Alert.alert(
       '🗑️ Clear All Tasks',
       `Are you sure you want to delete all ${tasks.length} tasks? This action cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' }, // Let user cancel
         {
           text: 'Clear All',
-          style: 'destructive',
+          style: 'destructive', // Red delete button
           onPress: () => {
-            setTasks([]);
-            saveTasks([]);
+            setTasks([]); // Empty the task list
+            saveTasks([]); // Save empty list
             Alert.alert('✅ Success', 'All tasks have been cleared!', [
               { text: 'OK', style: 'default' }
             ]);

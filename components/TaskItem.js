@@ -7,41 +7,45 @@ import {
   Alert,
 } from 'react-native';
 
+// This component shows a single task in the list
 const TaskItem = ({ 
-  task, 
-  onToggle, 
-  onDelete, 
-  onEdit,
-  index
+  task, // The task data (title, description, etc.)
+  onToggle, // Function to mark complete/incomplete
+  onDelete, // Function to delete the task
+  onEdit, // Function to edit the task
+  index // Position in the list
 }) => {
+  // Shows confirmation popup before deleting
   const handleDelete = () => {
     Alert.alert(
       'Delete Task',
       'Are you sure you want to delete this task?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => onDelete(index) },
+        { text: 'Cancel', style: 'cancel' }, // Let user cancel
+        { text: 'Delete', style: 'destructive', onPress: () => onDelete(index) }, // Delete if confirmed
       ]
     );
   };
 
+  // Returns the color for each priority level
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return '#FF6B6B';
-      case 'medium': return '#FFE66D';
-      case 'low': return '#4ECDC4';
-      default: return '#95A5A6';
+      case 'high': return '#FF6B6B'; // Red for urgent tasks
+      case 'medium': return '#FFE66D'; // Yellow for medium tasks
+      case 'low': return '#4ECDC4'; // Blue for low priority
+      default: return '#95A5A6'; // Gray if no priority set
     }
   };
 
+  // Converts date text to readable format (e.g., "Dec 25, 2:30 PM")
   const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
+    if (!dateString) return ''; // Return nothing if no date
+    const date = new Date(dateString); // Convert text to date object
     return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      month: 'short', // Short month name (Dec)
+      day: 'numeric', // Day number (25)
+      hour: '2-digit', // Hour (02)
+      minute: '2-digit', // Minute (30)
     });
   };
 
