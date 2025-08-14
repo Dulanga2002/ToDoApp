@@ -21,17 +21,13 @@ const TaskFilter = ({
   onSortChange, // Function called when sort method changes
   categories = [] // List of available categories
 }) => {
-  const [showFilters, setShowFilters] = useState(false); // Whether filter options are visible
-
-  // Available priority options
+  const [showFilters, setShowFilters] = useState(false);
   const priorities = ['all', 'low', 'medium', 'high'];
-  
-  // Available sorting options
   const sortOptions = [
-    { value: 'created', label: 'Created Date' }, // Sort by when task was made
-    { value: 'dueDate', label: 'Due Date' }, // Sort by when task is due
-    { value: 'priority', label: 'Priority' }, // Sort by importance level
-    { value: 'alphabetical', label: 'Alphabetical' } // Sort by task title A-Z
+    { value: 'created', label: 'Created Date' },
+    { value: 'dueDate', label: 'Due Date' },
+    { value: 'priority', label: 'Priority' },
+    { value: 'alphabetical', label: 'Alphabetical' }
   ];
 
   return (

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Animated,
 } from 'react-native';
 
 // This component shows a single task in the list
@@ -48,6 +49,29 @@ const TaskItem = ({
       minute: '2-digit', // Minute (30)
     });
   };
+
+  // Animation for overdue date
+  const overduePulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (task.dueDate && !task.done && new Date(task.dueDate) < new Date()) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(overduePulse, {
+            toValue: 1.15,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(overduePulse, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      overduePulse.setValue(1);
+    }
+  }, [task.dueDate, task.done]);
 
   return (
     <View
@@ -94,9 +118,27 @@ const TaskItem = ({
             )}
             
             {task.dueDate && (
-              <Text style={[styles.dueDate, new Date(task.dueDate) < new Date() && !task.done && styles.overdue]}>
-                📅 {formatDate(task.dueDate)}
-              </Text>
+              task.done ? (
+                <Text style={[styles.dueDate]}>
+                  📅 {formatDate(task.dueDate)}
+                </Text>
+              ) : (
+                <Animated.Text
+                  style={[
+                    styles.dueDate,
+                    new Date(task.dueDate) < new Date() && styles.overdue,
+                    new Date(task.dueDate) < new Date() && {
+                      transform: [{ scale: overduePulse }],
+                      color: '#FF6B6B',
+                      textShadowColor: '#FFBABA',
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 8,
+                    },
+                  ]}
+                >
+                  📅 {formatDate(task.dueDate)}
+                </Animated.Text>
+              )
             )}
           </View>
           
