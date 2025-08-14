@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -73,11 +73,33 @@ const TaskItem = ({
     }
   }, [task.dueDate, task.done]);
 
+  // User-friendly: Mark as Important
+  const [important, setImportant] = useState(task.important || false);
+  const starScale = useRef(new Animated.Value(1)).current;
+  const handleToggleImportant = () => {
+    setImportant(!important);
+    Animated.sequence([
+      Animated.timing(starScale, {
+        toValue: 1.4,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.spring(starScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    // Optionally, you can call a parent function to persist this change
+    // e.g., onMarkImportant(index, !important);
+  };
+
   return (
     <View
       style={[
         styles.container,
         task.done && styles.completedContainer,
+        important && { borderColor: '#FFD700', borderWidth: 2, shadowColor: '#FFD700', shadowOpacity: 0.3 },
       ]}
     >
       <View style={styles.leftSection}>
