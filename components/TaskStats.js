@@ -29,7 +29,7 @@ const TaskStats = ({ tasks }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📊 Task Overview</Text>
+      <Text style={styles.title}>📝 Task Overview</Text>
       
       <View style={styles.statsGrid}>
         <View style={[styles.statCard, styles.totalCard]}>
