@@ -5,22 +5,26 @@ import {
   StyleSheet,
 } from 'react-native';
 
+// This component shows a summary of all tasks with numbers and progress
 const TaskStats = ({ tasks }) => {
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.done).length;
-  const pendingTasks = totalTasks - completedTasks;
+  // Calculate different counts from the task list
+  const totalTasks = tasks.length; // How many tasks total
+  const completedTasks = tasks.filter(task => task.done).length; // How many are done
+  const pendingTasks = totalTasks - completedTasks; // How many are not done yet
   const overdueTasks = tasks.filter(task => 
-    !task.done && 
-    task.dueDate && 
-    new Date(task.dueDate) < new Date()
+    !task.done && // Not completed AND
+    task.dueDate && // Has a due date AND
+    new Date(task.dueDate) < new Date() // Due date is in the past
   ).length;
 
+  // Calculate what percentage is complete (0-100%)
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
+  // Count how many incomplete tasks are in each priority level
   const priorityStats = {
-    high: tasks.filter(task => !task.done && task.priority === 'high').length,
-    medium: tasks.filter(task => !task.done && task.priority === 'medium').length,
-    low: tasks.filter(task => !task.done && task.priority === 'low').length,
+    high: tasks.filter(task => !task.done && task.priority === 'high').length, // Urgent tasks not done
+    medium: tasks.filter(task => !task.done && task.priority === 'medium').length, // Medium tasks not done
+    low: tasks.filter(task => !task.done && task.priority === 'low').length, // Low priority tasks not done
   };
 
   return (

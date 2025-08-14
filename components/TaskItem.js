@@ -1,48 +1,97 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Animated,
 } from 'react-native';
 
+// This component shows a single task in the list
 const TaskItem = ({ 
-  task, 
-  onToggle, 
-  onDelete, 
-  onEdit,
-  index
+  task, // The task data (title, description, etc.)
+  onToggle, // Function to mark complete/incomplete
+  onDelete, // Function to delete the task
+  onEdit, // Function to edit the task
+  index // Position in the list
 }) => {
+  // Shows confirmation popup before deleting
   const handleDelete = () => {
     Alert.alert(
       'Delete Task',
       'Are you sure you want to delete this task?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => onDelete(index) },
+        { text: 'Cancel', style: 'cancel' }, // Let user cancel
+        { text: 'Delete', style: 'destructive', onPress: () => onDelete(index) }, // Delete if confirmed
       ]
     );
   };
 
+  // Returns the color for each priority level
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return '#FF6B6B';
-      case 'medium': return '#FFE66D';
-      case 'low': return '#4ECDC4';
-      default: return '#95A5A6';
+      case 'high': return '#FF6B6B'; // Red for urgent tasks
+      case 'medium': return '#FFE66D'; // Yellow for medium tasks
+      case 'low': return '#4ECDC4'; // Blue for low priority
+      default: return '#95A5A6'; // Gray if no priority set
     }
   };
 
+  // Converts date text to readable format (e.g., "Dec 25, 2:30 PM")
   const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
+    if (!dateString) return ''; // Return nothing if no date
+    const date = new Date(dateString); // Convert text to date object
     return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      month: 'short', // Short month name (Dec)
+      day: 'numeric', // Day number (25)
+      hour: '2-digit', // Hour (02)
+      minute: '2-digit', // Minute (30)
     });
+  };
+
+  // Animation for overdue date
+  const overduePulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (task.dueDate && !task.done && new Date(task.dueDate) < new Date()) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(overduePulse, {
+            toValue: 1.15,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(overduePulse, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      overduePulse.setValue(1);
+    }
+  }, [task.dueDate, task.done]);
+
+  // User-friendly: Mark as Important
+  const [important, setImportant] = useState(task.important || false);
+  const starScale = useRef(new Animated.Value(1)).current;
+  const handleToggleImportant = () => {
+    setImportant(!important);
+    Animated.sequence([
+      Animated.timing(starScale, {
+        toValue: 1.4,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.spring(starScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    // Optionally, you can call a parent function to persist this change
+    // e.g., onMarkImportant(index, !important);
   };
 
   return (
@@ -50,6 +99,7 @@ const TaskItem = ({
       style={[
         styles.container,
         task.done && styles.completedContainer,
+        important && { borderColor: '#FFD700', borderWidth: 2, shadowColor: '#FFD700', shadowOpacity: 0.3 },
       ]}
     >
       <View style={styles.leftSection}>
@@ -90,9 +140,27 @@ const TaskItem = ({
             )}
             
             {task.dueDate && (
-              <Text style={[styles.dueDate, new Date(task.dueDate) < new Date() && !task.done && styles.overdue]}>
-                📅 {formatDate(task.dueDate)}
-              </Text>
+              task.done ? (
+                <Text style={[styles.dueDate]}>
+                  📅 {formatDate(task.dueDate)}
+                </Text>
+              ) : (
+                <Animated.Text
+                  style={[
+                    styles.dueDate,
+                    new Date(task.dueDate) < new Date() && styles.overdue,
+                    new Date(task.dueDate) < new Date() && {
+                      transform: [{ scale: overduePulse }],
+                      color: '#FF6B6B',
+                      textShadowColor: '#FFBABA',
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 8,
+                    },
+                  ]}
+                >
+                  📅 {formatDate(task.dueDate)}
+                </Animated.Text>
+              )
             )}
           </View>
           

@@ -7,21 +7,21 @@ import {
   TextInput,
 } from 'react-native';
 
+// This component provides search and filter options for tasks
 const TaskFilter = ({ 
-  searchQuery, 
-  onSearchChange, 
-  selectedCategory, 
-  onCategoryChange,
-  selectedPriority,
-  onPriorityChange,
-  showCompleted,
-  onToggleCompleted,
-  sortBy,
-  onSortChange,
-  categories = []
+  searchQuery, // Current search text
+  onSearchChange, // Function called when search text changes
+  selectedCategory, // Currently selected category filter
+  onCategoryChange, // Function called when category filter changes
+  selectedPriority, // Currently selected priority filter
+  onPriorityChange, // Function called when priority filter changes
+  showCompleted, // Whether completed tasks are shown
+  onToggleCompleted, // Function to show/hide completed tasks
+  sortBy, // Current sorting method
+  onSortChange, // Function called when sort method changes
+  categories = [] // List of available categories
 }) => {
   const [showFilters, setShowFilters] = useState(false);
-
   const priorities = ['all', 'low', 'medium', 'high'];
   const sortOptions = [
     { value: 'created', label: 'Created Date' },

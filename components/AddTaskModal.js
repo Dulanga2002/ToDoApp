@@ -11,14 +11,17 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+// This popup window lets users add new tasks or edit existing ones
 const AddTaskModal = ({ visible, onClose, onAddTask, editingTask = null }) => {
-  const [task, setTask] = useState(editingTask?.text || '');
-  const [description, setDescription] = useState(editingTask?.description || '');
-  const [category, setCategory] = useState(editingTask?.category || '');
-  const [priority, setPriority] = useState(editingTask?.priority || 'low');
-  const [dueDate, setDueDate] = useState(editingTask?.dueDate ? new Date(editingTask.dueDate) : null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Form fields - stores what the user types
+  const [task, setTask] = useState(editingTask?.text || ''); // Main task title
+  const [description, setDescription] = useState(editingTask?.description || ''); // Extra details
+  const [category, setCategory] = useState(editingTask?.category || ''); // Which category (Work, Personal, etc.)
+  const [priority, setPriority] = useState(editingTask?.priority || 'low'); // How important (low, medium, high)
+  const [dueDate, setDueDate] = useState(editingTask?.dueDate ? new Date(editingTask.dueDate) : null); // When it's due
+  const [showDatePicker, setShowDatePicker] = useState(false); // Show/hide the date picker
 
+  // Available options for the user to choose from
   const categories = ['Personal', 'Work', 'Shopping', 'Health', 'Education', 'Other'];
   const priorities = [
     { value: 'low', label: 'Low', color: '#4ECDC4' },
@@ -26,40 +29,44 @@ const AddTaskModal = ({ visible, onClose, onAddTask, editingTask = null }) => {
     { value: 'high', label: 'High', color: '#FF6B6B' }
   ];
 
+  // Clears all form fields back to empty
   const resetForm = () => {
-    setTask('');
-    setDescription('');
-    setCategory('');
-    setPriority('low');
-    setDueDate(null);
+    setTask(''); // Clear task title
+    setDescription(''); // Clear description
+    setCategory(''); // Clear category
+    setPriority('low'); // Reset to low priority
+    setDueDate(null); // Clear due date
   };
 
+  // Saves the task when user clicks "Save"
   const handleSubmit = () => {
     if (!task.trim()) {
-      Alert.alert('Error', 'Please enter a task title');
+      Alert.alert('Error', 'Please enter a task title'); // Must have a title
       return;
     }
 
+    // Create the task object with all the information
     const newTask = {
-      id: editingTask?.id || Date.now(),
-      text: task.trim(),
-      description: description.trim(),
-      category: category || null,
-      priority,
-      dueDate: dueDate ? dueDate.toISOString() : null,
-      done: editingTask?.done || false,
-      createdAt: editingTask?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: editingTask?.id || Date.now(), // Use existing ID or create new one
+      text: task.trim(), // Remove extra spaces from title
+      description: description.trim(), // Remove extra spaces from description
+      category: category || null, // Use selected category or none
+      priority, // Selected priority level
+      dueDate: dueDate ? dueDate.toISOString() : null, // Convert date to text format
+      done: editingTask?.done || false, // Keep completion status if editing
+      createdAt: editingTask?.createdAt || new Date().toISOString(), // Keep original creation time
+      updatedAt: new Date().toISOString(), // Record when it was last changed
     };
 
-    onAddTask(newTask);
-    resetForm();
-    onClose();
+    onAddTask(newTask); // Send the task back to the main app
+    resetForm(); // Clear the form
+    onClose(); // Close the popup
   };
 
+  // Closes the popup without saving
   const handleClose = () => {
-    resetForm();
-    onClose();
+    resetForm(); // Clear the form
+    onClose(); // Close the popup
   };
 
   return (
