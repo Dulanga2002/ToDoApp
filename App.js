@@ -254,7 +254,7 @@ export default function App() {
       
       {/* Header */}
       <View style={[styles.header, darkMode && styles.headerDark]}>
-        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>✅  To Do List</Text>
+        <Text style={[styles.headerTitle, darkMode && styles.headerTitleDark]}>To Do List</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             onPress={() => setDarkMode(!darkMode)}
