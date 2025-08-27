@@ -32,7 +32,13 @@ const TaskFilter = ({
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
+      {/* Search Bar with Real-time Filtering
+       * This search bar allows users to filter tasks by typing keywords.
+       * - The search is performed in real-time as the user types
+       * - It searches within task titles and descriptions
+       * - The filter button toggles additional filtering options
+       * - Search results update immediately without requiring a submit button
+       */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -53,7 +59,14 @@ const TaskFilter = ({
       {/* Filters */}
       {showFilters && (
         <View style={styles.filtersContainer}>
-          {/* Category Filter */}
+          {/* Category Filter Section
+           * This section allows filtering tasks by their assigned categories
+           * - Shows "All" option plus all unique categories from tasks
+           * - Uses a chip-style UI for better touch targets
+           * - Selected category is visually highlighted
+           * - Categories are dynamically generated from task data
+           * - Selecting a category immediately filters the task list
+           */}
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Category:</Text>
             <View style={styles.chipContainer}>
