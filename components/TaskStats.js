@@ -5,7 +5,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-// This component shows a summary of all tasks with numbers and progress
+// This componentt shows a summary of all tasks with numbers and progress
 const TaskStats = ({ tasks }) => {
   // Calculate different counts from the task list
   const totalTasks = tasks.length; // How many tasks total
